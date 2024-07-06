@@ -19,7 +19,10 @@ while True:
         results = model(this_frame, device="mps")
     else:
         results = model(this_frame)
-    print(results)
+    
+    for result in results:
+        bboxes = result.boxes.xyxy.cpu().numpy().astype("int")
+        print(bboxes)
 
 
     # Show frames, wait for interrupt
