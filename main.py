@@ -7,6 +7,15 @@ model = YOLO("yolov8s.pt")
 
 capture = cv2.VideoCapture("surfers.mp4")   # Video capture obj
 
+# Lazy model func. 
+# Only need to determine mps availability once
+def model_CPU(frame):
+    return model(frame)
+def model_GPU(frame):
+    return model(frame, device="mps")
+
+model_ = model_GPU if torch.backends.mps.is_available() else model_CPU
+
 # Plays video frame by frame
 while True:
     # Read frame
@@ -15,10 +24,7 @@ while True:
         break
 
     # Detect objects at this frame
-    if torch.backends.mps.is_available():
-        results = model(this_frame, device="mps")
-    else:
-        results = model(this_frame)
+    results = model_(this_frame)
     
     for result in results:
         bboxes = result.boxes.xyxy.cpu().numpy().astype("int")
