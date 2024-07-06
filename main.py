@@ -4,13 +4,19 @@ import torch
 
 model = YOLO("yolov8s.pt")
 
-capture = cv2.VideoCapture(0)
-capture.set(cv2.CAP_PROP_FRAME_WIDTH,600)
-capture.set(cv2.CAP_PROP_FRAME_HEIGHT,500)
-
 # Lazy model func. 
-# Only need to determine mps availability once
-model_ = lambda frame: model(frame, device="mps") if torch.backends.mps.is_available else model(frame)
+if torch.cuda.is_available():
+    model.model = model.model.half()  # Convert model to half precision for CUDA
+    device = 'cuda'
+elif torch.backends.mps.is_available():
+    device = 'mps'
+else:
+    device = 'cpu'
+
+
+capture = cv2.VideoCapture(0)
+capture.set(cv2.CAP_PROP_FRAME_WIDTH, 600)
+capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 500)
 
 # Plays video frame by frame
 while True:
@@ -20,23 +26,27 @@ while True:
         break
 
     # Detect objects at this frame
-    results = model_(this_frame)
-    
-    for result in results:
-        bboxes = result.boxes.xyxy.cpu().numpy().astype("int")  # Coordinates of boxes
-        classes = result.boxes.cls.cpu().numpy().astype("int")  # Classes (index) of boxes
-        confidences = result.boxes.conf.cpu().numpy()   # Confidences of boxes
+    results = model(this_frame, device=device)
 
-        # Draw box on detected objects
-        for i in range(len(bboxes)):
-            # Draw box
-            (x1, y1, x2, y2) = bboxes[i]
-            cv2.rectangle(this_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    # Note: results only have one element here, which is the set of objects in this frame.
+    # Unless the input has multiple images (i.e., this_frame is multiple images)
+    result = results[0]
 
-            # Draw label & Possibility
-            label = f"{model.names[classes[i]]} {confidences[i]:.2f}" #{result.boxes.conf[cls_idx]:.2f}
-            cv2.putText(this_frame, label, (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.9, color=(0, 255, 0), thickness=2)
+    # Note: results only have one element here, which is the set of objects in this frame.
+    # for result in results:    No need to use a for loop
+    bboxes = result.boxes.xyxy.cpu().numpy().astype("int")  # Coordinates of boxes
+    classes = result.boxes.cls.cpu().numpy().astype("int")  # Classes (index) of boxes
+    confidences = result.boxes.conf.cpu().numpy()           # Confidences of boxes
 
+    # Draw box on detected objects
+    for box, class_id, confidence in zip(bboxes, classes, confidences):
+        # Draw box
+        x1, y1, x2, y2 = box
+        cv2.rectangle(this_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+        # Draw text
+        label = f"{model.names[class_id]} {confidence:.2f}"
+        cv2.putText(this_frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
     # Show frames, wait for interrupt
     cv2.imshow("Video", this_frame)
