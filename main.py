@@ -13,9 +13,10 @@ while True:
     if not is_frame:
         break
 
-    # Detect objects
-    results = model(frame)
-    
+    # Detect objects at this frame
+    results = model(this_frame)
+    print(results)
+
 
     # Show frames, wait for interrupt
     cv2.imshow("Video", this_frame)
