@@ -1,5 +1,6 @@
 import cv2
 from ultralytics import YOLO
+import torch
 
 model = YOLO("yolov8s.pt")
 
@@ -14,7 +15,10 @@ while True:
         break
 
     # Detect objects at this frame
-    results = model(this_frame)
+    if torch.backends.mps.is_available():
+        results = model(this_frame, device="mps")
+    else:
+        results = model(this_frame)
     print(results)
 
 
