@@ -22,7 +22,10 @@ while True:
     
     for result in results:
         bboxes = result.boxes.xyxy.cpu().numpy().astype("int")
-        print(bboxes)
+        # Draw box on detected objects
+        for bbox in bboxes:
+            (x1, y1, x2, y2) = bbox
+            cv2.rectangle(this_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
 
     # Show frames, wait for interrupt
