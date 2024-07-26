@@ -4,19 +4,22 @@ import torch
 
 model = YOLO("yolov8s.pt")
 
-# Lazy model func. 
-if torch.cuda.is_available():
-    model.model = model.model.half()  # Convert model to half precision for CUDA
+# Lazy model func.
+if torch.cuda.is_available():   # NVIDIA
     device = 'cuda'
-elif torch.backends.mps.is_available():
+elif torch.backends.mps.is_available():     # Apple M series
     device = 'mps'
 else:
     device = 'cpu'
 
+print(device)
 
-capture = cv2.VideoCapture(0)
+# capture = cv2.VideoCapture("surfers.mp4")
+capture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 capture.set(cv2.CAP_PROP_FRAME_WIDTH, 600)
 capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 500)
+
+print(capture)
 
 # Plays video frame by frame
 while True:
@@ -55,3 +58,5 @@ while True:
 
 capture.release()
 cv2.destroyAllWindows()
+
+print("Capture released, windows destroyed.")
